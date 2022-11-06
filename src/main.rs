@@ -29,6 +29,15 @@ fn draw_tiles(tile_vec: &Vec<Tile>){
     }
 }
 
+fn  on_top_of_start_or_end(tile_vec: &Vec<Tile>, input_tile:&Tile) -> bool{
+    for tile in tile_vec.iter(){
+        if input_tile.x == tile.x && input_tile.y == tile.y{
+            return true
+        }
+    }
+    false
+}
+
 
 #[macroquad::main(window_conf)]
 async fn main() {
@@ -71,9 +80,13 @@ async fn main() {
                     y: (mouse_position().1 / 10.0).floor() * 10.0,
                     color: RED,
                 };
-                tile_vec.push(end_pos);
+                if on_top_of_start_or_end(&tile_vec, &end_pos){}
+                else{
+                    tile_vec.push(end_pos);
+                }
+                
             }
-            if is_mouse_button_released(MouseButton::Left){
+            if tile_vec.len() == 2 && is_mouse_button_released(MouseButton::Left){
                 state_integer = 2;
             }
         }
@@ -88,9 +101,14 @@ async fn main() {
                     y: (mouse_position().1 / 10.0).floor() * 10.0,
                     color: BLACK,
                 };
+
                 if tile_vec.contains(&wall_pos){}
+                
                 else{
-                    tile_vec.push(wall_pos);
+                    if on_top_of_start_or_end(&tile_vec, &wall_pos){}
+                    else{
+                        tile_vec.push(wall_pos);
+                    }
                 }
                 
             }
