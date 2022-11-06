@@ -1,4 +1,5 @@
-use macroquad::{prelude::{*, camera::mouse}, miniquad::start};
+use macroquad::prelude::*;
+use std::{env, thread, time};
 
 fn window_conf() -> Conf {
     Conf {
@@ -16,7 +17,7 @@ fn draw_grid(screen_width: f32, grid_size:i32){
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Copy, Clone)]
 struct Tile{
     x: f32,
     y: f32,
@@ -25,7 +26,7 @@ struct Tile{
 
 fn draw_tiles(tile_vec: &Vec<Tile>){
     for tile in tile_vec.iter(){
-        draw_rectangle(tile.x, tile.y, 10.0, 10.0, tile.color);
+        draw_rectangle(tile.x * 10.0, tile.y * 10.0, 10.0, 10.0, tile.color);
     }
 }
 
@@ -45,90 +46,142 @@ async fn main() {
     let mut state_integer = 0;
     
     let screen_width = screen_width();
+    let screen_heigth = screen_height();
     let grid_size = ((screen_width / 10.0) + 1.0) as i32;
     
     let mut tile_vec: Vec<Tile> = Vec::new();
+    let mut start: [f32; 2] = [0.0, 0.0];
+    let mut end: [f32; 2] = [0.0, 0.0];
+    let mut path_vec: Vec<Vec<[bool; 2]>> = Vec::new();
+    let mut new_tile_vec = Vec::new();
+    
 
 
     loop{
 
+        //set start tile
         if state_integer == 0{
             clear_background(WHITE);
             draw_grid(screen_width, grid_size);
-            println!("{:?}", mouse_position());
             if is_mouse_button_pressed(MouseButton::Left){
-                let start_pos = Tile{
-                    x: (mouse_position().0 / 10.0).floor() * 10.0,
-                    y: (mouse_position().1 / 10.0).floor() * 10.0,
+                let start_tile = Tile{
+                    x: (mouse_position().0 / 10.0).floor(),
+                    y: (mouse_position().1 / 10.0).floor(),
                     color: BLUE,
                 };
-                tile_vec.push(start_pos);
+                tile_vec.push(start_tile);
+                start = [start_tile.x, start_tile.y];
             }
             if is_mouse_button_released(MouseButton::Left){
                 state_integer = 1;
             }
         }
 
+        //set end tile
         else if state_integer == 1{
             clear_background(WHITE);
             draw_grid(screen_width, grid_size);
-            println!("{:?}", mouse_position());
             draw_tiles(&tile_vec);
             if is_mouse_button_pressed(MouseButton::Left){
-                let end_pos = Tile{
-                    x: (mouse_position().0 / 10.0).floor() * 10.0,
-                    y: (mouse_position().1 / 10.0).floor() * 10.0,
+                let end_tile = Tile{
+                    x: (mouse_position().0 / 10.0).floor(),
+                    y: (mouse_position().1 / 10.0).floor(),
                     color: RED,
                 };
-                if on_top_of_start_or_end(&tile_vec, &end_pos){}
+                if on_top_of_start_or_end(&tile_vec, &end_tile){}
                 else{
-                    tile_vec.push(end_pos);
+                    tile_vec.push(end_tile);
+                    end = [end_tile.x, end_tile.y];
                 }
-                
             }
             if tile_vec.len() == 2 && is_mouse_button_released(MouseButton::Left){
                 state_integer = 2;
             }
         }
 
+        //set the wall tiles that cannot be passed
         else if state_integer == 2{
             clear_background(WHITE);
             draw_grid(screen_width, grid_size);
             draw_tiles(&tile_vec);
             if is_mouse_button_down(MouseButton::Left){
                 let wall_pos = Tile{
-                    x: (mouse_position().0 / 10.0).floor() * 10.0,
-                    y: (mouse_position().1 / 10.0).floor() * 10.0,
+                    x: (mouse_position().0 / 10.0).floor(),
+                    y: (mouse_position().1 / 10.0).floor(),
                     color: BLACK,
                 };
-
                 if tile_vec.contains(&wall_pos){}
-                
                 else{
                     if on_top_of_start_or_end(&tile_vec, &wall_pos){}
                     else{
                         tile_vec.push(wall_pos);
                     }
-                }
-                
+                }  
             }
             else if is_mouse_button_pressed(MouseButton::Middle){
                 state_integer = 3;
             };
         }
-
         else if state_integer == 3{
-            clear_background(WHITE);
-            draw_grid(screen_width, grid_size);
-            draw_tiles(&tile_vec);
-            let mp = mouse_position();
-            println!("{:?}", mp);
+            for tile in tile_vec.iter(){
+                if tile.color == BLUE{
+                    new_tile_vec.push(*tile);
+                    state_integer = 4;
+                    break;
+                }
+            }
         }
-        
+        //init path vector
+        else if state_integer == 4{
+            
+            clear_background(WHITE);
+            draw_tiles(&tile_vec);
+            draw_grid(screen_width, grid_size);
+            
+            let mut temp_tile_vec = Vec::new();
 
-        
-
-
+            for tile in new_tile_vec.iter(){
+                    let new_tile_01 = Tile{
+                        x: tile.x+1.0,
+                        y: tile.y,
+                        color: SKYBLUE,
+                    };
+                    temp_tile_vec.push(new_tile_01);
+                    let new_tile_02 = Tile{
+                        x: tile.x-1.0,
+                        y: tile.y,
+                        color: SKYBLUE,
+                    };
+                    temp_tile_vec.push(new_tile_02);
+                    let new_tile_03 = Tile{
+                        x: tile.x,
+                        y: tile.y+1.0,
+                        color: SKYBLUE,
+                    };
+                    temp_tile_vec.push(new_tile_03);
+                    let new_tile_04 = Tile{
+                        x: tile.x,
+                        y: tile.y-1.0,
+                        color: SKYBLUE,
+                    };
+                    temp_tile_vec.push(new_tile_04);
+            }
+            new_tile_vec.clear();
+            for tile in temp_tile_vec.iter(){
+                if tile.x < 0.0 {}
+                else if tile.y < 0.0 {}
+                else if tile.x > (screen_width / 10.0){}
+                else if tile.y > (screen_heigth / 10.0){}
+                else if tile_vec.contains(tile){}
+                else if tile.x == start[0] && tile.y == start[0]{}
+                else if tile.x == end[0] && tile.y == end[1]{}
+                else{
+                    tile_vec.push(*tile);
+                    new_tile_vec.push(*tile);
+                }
+            }
+            thread::sleep(time::Duration::from_millis(100));
+        }
         next_frame().await
     }
     
