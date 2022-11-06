@@ -30,7 +30,7 @@ fn draw_tiles(tile_vec: &Vec<Tile>){
     }
 }
 
-fn  on_top_of_start_or_end(tile_vec: &Vec<Tile>, input_tile:&Tile) -> bool{
+fn on_top_of_existing_tiles(tile_vec: &Vec<Tile>, input_tile:&Tile) -> bool{
     for tile in tile_vec.iter(){
         if input_tile.x == tile.x && input_tile.y == tile.y{
             return true
@@ -39,6 +39,21 @@ fn  on_top_of_start_or_end(tile_vec: &Vec<Tile>, input_tile:&Tile) -> bool{
     false
 }
 
+fn out_of_bounds(input_tile:&Tile, screen_width: f32, screen_height: f32) -> bool{
+    if input_tile.x < 0.0{
+        return true
+    }
+    else if input_tile.y < 0.0{
+        return true
+    }
+    else if input_tile.x > ((screen_width / 10.0) - 1.0).floor(){
+        return true
+    }
+    else if input_tile.y > ((screen_height / 10.0) - 1.0).floor(){
+        return true
+    }
+    return false
+}
 
 #[macroquad::main(window_conf)]
 async fn main() {
@@ -46,14 +61,14 @@ async fn main() {
     let mut state_integer = 0;
     
     let screen_width = screen_width();
-    let screen_heigth = screen_height();
+    let screen_height = screen_height();
     let grid_size = ((screen_width / 10.0) + 1.0) as i32;
     
     let mut tile_vec: Vec<Tile> = Vec::new();
     let mut start: [f32; 2] = [0.0, 0.0];
     let mut end: [f32; 2] = [0.0, 0.0];
     let mut path_vec: Vec<Vec<[bool; 2]>> = Vec::new();
-    let mut new_tile_vec = Vec::new();
+    let mut previous_cycle_tile_vec = Vec::new();
     
 
 
@@ -88,7 +103,7 @@ async fn main() {
                     y: (mouse_position().1 / 10.0).floor(),
                     color: RED,
                 };
-                if on_top_of_start_or_end(&tile_vec, &end_tile){}
+                if on_top_of_existing_tiles(&tile_vec, &end_tile){}
                 else{
                     end = [end_tile.x, end_tile.y];
                     tile_vec.push(end_tile);
@@ -112,7 +127,7 @@ async fn main() {
                 };
                 if tile_vec.contains(&wall_pos){}
                 else{
-                    if on_top_of_start_or_end(&tile_vec, &wall_pos){}
+                    if on_top_of_existing_tiles(&tile_vec, &wall_pos){}
                     else{
                         tile_vec.push(wall_pos);
                     }
@@ -125,13 +140,13 @@ async fn main() {
         else if state_integer == 3{
             for tile in tile_vec.iter(){
                 if tile.color == BLUE{
-                    new_tile_vec.push(*tile);
+                    previous_cycle_tile_vec.push(*tile);
                     state_integer = 4;
                     break;
                 }
             }
         }
-        //init path vector
+        //pathfinding
         else if state_integer == 4{
             
             clear_background(WHITE);
@@ -140,7 +155,7 @@ async fn main() {
             
             let mut temp_tile_vec = Vec::new();
 
-            for tile in new_tile_vec.iter(){
+            for tile in previous_cycle_tile_vec.iter(){
                     let new_tile_01 = Tile{
                         x: tile.x+1.0,
                         y: tile.y,
@@ -166,19 +181,14 @@ async fn main() {
                     };
                     temp_tile_vec.push(new_tile_04);
             }
-            new_tile_vec.clear();
+            previous_cycle_tile_vec.clear();
             for tile in temp_tile_vec.iter(){
-                if tile.x < 0.0 {}
-                else if tile.y < 0.0 {}
-                else if tile.x == start[0] && tile.y == start[1]{}
-                else if tile.x == end[0] && tile.y == end[1]{}
-                else if tile.x > ((screen_width / 10.0).floor()){}
-                else if tile.y > ((screen_heigth / 10.0).floor()){}
+                if out_of_bounds(tile, screen_width, screen_height){}
+                else if on_top_of_existing_tiles(&tile_vec, tile){}
                 else if tile_vec.contains(tile){}
-                
                 else{
                     tile_vec.push(*tile);
-                    new_tile_vec.push(*tile);
+                    previous_cycle_tile_vec.push(*tile);
                 }
             }
             thread::sleep(time::Duration::from_millis(100));
