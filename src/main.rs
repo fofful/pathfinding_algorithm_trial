@@ -69,8 +69,8 @@ async fn main() {
                     y: (mouse_position().1 / 10.0).floor(),
                     color: BLUE,
                 };
-                tile_vec.push(start_tile);
                 start = [start_tile.x, start_tile.y];
+                tile_vec.push(start_tile);
             }
             if is_mouse_button_released(MouseButton::Left){
                 state_integer = 1;
@@ -90,8 +90,8 @@ async fn main() {
                 };
                 if on_top_of_start_or_end(&tile_vec, &end_tile){}
                 else{
-                    tile_vec.push(end_tile);
                     end = [end_tile.x, end_tile.y];
+                    tile_vec.push(end_tile);
                 }
             }
             if tile_vec.len() == 2 && is_mouse_button_released(MouseButton::Left){
@@ -170,11 +170,12 @@ async fn main() {
             for tile in temp_tile_vec.iter(){
                 if tile.x < 0.0 {}
                 else if tile.y < 0.0 {}
-                else if tile.x > (screen_width / 10.0){}
-                else if tile.y > (screen_heigth / 10.0){}
-                else if tile_vec.contains(tile){}
-                else if tile.x == start[0] && tile.y == start[0]{}
+                else if tile.x == start[0] && tile.y == start[1]{}
                 else if tile.x == end[0] && tile.y == end[1]{}
+                else if tile.x > ((screen_width / 10.0).floor()){}
+                else if tile.y > ((screen_heigth / 10.0).floor()){}
+                else if tile_vec.contains(tile){}
+                
                 else{
                     tile_vec.push(*tile);
                     new_tile_vec.push(*tile);
