@@ -1,6 +1,4 @@
 use macroquad::{prelude::{*, camera::mouse}, miniquad::start};
-use std::{thread, time};
-
 
 fn window_conf() -> Conf {
     Conf {
@@ -17,6 +15,8 @@ fn draw_grid(screen_width: f32, grid_size:i32){
         draw_line((i*10) as f32,0.0, (i*10) as f32, screen_width, 1.0, BLACK);
     }
 }
+
+#[derive(PartialEq)]
 struct Tile{
     x: f32,
     y: f32,
@@ -38,10 +38,6 @@ async fn main() {
     let screen_width = screen_width();
     let grid_size = ((screen_width / 10.0) + 1.0) as i32;
     
-    let mut start_pos = (0.0, 0.0);
-    let mut end_pos = (0.0, 0.0);
-
-    
     let mut tile_vec: Vec<Tile> = Vec::new();
 
 
@@ -58,6 +54,8 @@ async fn main() {
                     color: BLUE,
                 };
                 tile_vec.push(start_pos);
+            }
+            if is_mouse_button_released(MouseButton::Left){
                 state_integer = 1;
             }
         }
@@ -74,11 +72,34 @@ async fn main() {
                     color: RED,
                 };
                 tile_vec.push(end_pos);
+            }
+            if is_mouse_button_released(MouseButton::Left){
                 state_integer = 2;
             }
         }
 
         else if state_integer == 2{
+            clear_background(WHITE);
+            draw_grid(screen_width, grid_size);
+            draw_tiles(&tile_vec);
+            if is_mouse_button_down(MouseButton::Left){
+                let wall_pos = Tile{
+                    x: (mouse_position().0 / 10.0).floor() * 10.0,
+                    y: (mouse_position().1 / 10.0).floor() * 10.0,
+                    color: BLACK,
+                };
+                if tile_vec.contains(&wall_pos){}
+                else{
+                    tile_vec.push(wall_pos);
+                }
+                
+            }
+            else if is_mouse_button_pressed(MouseButton::Middle){
+                state_integer = 3;
+            };
+        }
+
+        else if state_integer == 3{
             clear_background(WHITE);
             draw_grid(screen_width, grid_size);
             draw_tiles(&tile_vec);
